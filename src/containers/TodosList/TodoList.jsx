@@ -1,6 +1,27 @@
 import React from 'react'
-import { Form, Label, Input, List } from 'semantic-ui-react'
+import { List } from 'semantic-ui-react'
+import {sortableContainer, sortableElement} from 'react-sortable-hoc'
+import arrayMove from 'array-move'
 import CheckList from '../../components/CheckList'
+import TodoListForm from './TodoListForm'
+
+const SortableItem = sortableElement((value) => {
+    const item = value.value
+    console.log(item, value)
+    return (
+      <CheckList 
+        key={item.index} 
+        label={item.label} 
+        checked={item.checked} 
+        onChange={value.onChange}  
+      />
+    )
+  }
+)
+
+const SortableContainer = sortableContainer(({children}) => {
+  return <List>{children}</List>
+})
 
 class TodoList extends React.Component {
 
@@ -12,15 +33,21 @@ class TodoList extends React.Component {
     }
   }
 
+  onSortEnd = ({oldIndex, newIndex}) => {
+    this.setState(({checklists}) => ({
+      checklists: arrayMove(checklists, oldIndex, newIndex),
+    }))
+  }
+
   changeHandle = (event) => {
-    console.log('entrou aqui no changeHandle')
+    console.log('changeHandle')
     this.setState({ term: event.target.value })
   }
 
   submitHandle = (event) => {
-    const {checklists, term} = this.state;
-    console.log('entrou aqui no submitHandle')
-    event.preventDefault();
+    console.log('submitHandle')
+    const {checklists, term} = this.state
+    event.preventDefault()
     this.setState({
       term: '',
       checklists: [...checklists, {
@@ -32,41 +59,31 @@ class TodoList extends React.Component {
 
   toggleComplete = (e, index) => {
     console.log(`entrou no toggleComplete: ${index}`)
-    const {checklists} = this.state;
+    const {checklists} = this.state
     const itemUpd = checklists.map((item, i) => { 
       if(i === index) {
         return {...item, checked: !item.checked}
       }
-      return item;
+      return item
     })
 
     this.setState({checklists: [...itemUpd]})
   }
 
   render() {
-    const {checklists} = this.state;
+    const {checklists} = this.state
 
     return (
       <div className="TodoList">
-        <Form onSubmit={this.submitHandle}>
-          <Form.Field>
-            <Label>Digite o nome da tarefa que quer adicionar</Label>
-            <Input placeholder='Adicionar item na lista' onChange={this.changeHandle} value={this.state.term} />
-            <Input type="submit" primary>Incluir</Input>
-          </Form.Field>
-        </Form>
 
-        <List>
-          { checklists.map((item, index) => 
-              <CheckList 
-                key={index} 
-                label={item.label} 
-                checked={item.checked} 
-                onChange={ (e) => this.toggleComplete(e, index) }
-              />
-            ) 
-          }
-        </List>
+        <TodoListForm term={this.state.term} changeHandle={this.changeHandle} submitHandle={this.submitHandle} />
+
+        <SortableContainer onSortEnd={this.onSortEnd}>
+          {checklists.map((value, index) => (
+            <SortableItem key={index} index={index} value={value} onChange={(e) => this.toggleComplete(e, index)} />
+          ))}
+        </SortableContainer>        
+
 
       </div>
     )
